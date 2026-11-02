@@ -4,7 +4,7 @@ NULLSTACK is a cyberpunk server-management and netrunning game in development. *
 
 ## Play the early-access scenario
 
-Download the platform archive from [Releases](https://github.com/Cilis1/NULLSTACK-A-Cyberpunk-Server-Management-Netrunning-Simulator/releases), extract it, then launch `Nullstack.exe` on Windows or run `./Nullstack` in a terminal on Linux. Enter `help` to see commands and the victory condition. You can pass an unsigned numeric seed on the command line to repeat a run. The scenario currently has **no save/resume**. The Windows binary is unsigned and may trigger SmartScreen. There is no installer or self-updater.
+Download the platform archive from [Releases](https://github.com/Cilis1/NULLSTACK-A-Cyberpunk-Server-Management-Netrunning-Simulator/releases), on Windows, run `NullstackSetup.exe` to download and install the game, or extract the ZIP and launch `Nullstack.exe`. On Linux, extract the archive and run `./Nullstack` in a terminal. Enter `help` to see commands and the victory condition. You can pass an unsigned numeric seed on the command line to repeat a run. The scenario currently has **no save/resume**. The Windows binary is unsigned and may trigger SmartScreen. The basic installer has no uninstaller or self-updater; see [installer documentation](installer/bootstrapper/README.md).
 
 ## Build and test
 

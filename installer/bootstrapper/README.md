@@ -1,0 +1,7 @@
+# Windows bootstrapper
+
+The Windows packaging workflow builds `NullstackSetup.exe` with the release ZIP URL and its SHA-256 embedded. It downloads over HTTPS with WinHTTP, checks the hash with Windows CNG, extracts the verified archive using Windows 10's system `tar.exe`, installs the game under `%LOCALAPPDATA%\Programs\Nullstack`, and creates Desktop and Start Menu shortcuts. It does not require administrator privileges. The executable is unsigned and may trigger SmartScreen.
+
+Interactive setup offers to launch the game. `/S` runs silently; `/no-shortcut` skips shortcuts; `/D=<path>` changes the install directory. For automation `/archive=<path>` uses a local copy of the *same pinned, hash-verified* ZIP instead of downloading it. Example: `NullstackSetup.exe /S /no-shortcut "/D=C:\Games\Nullstack"`. Silent mode reports failure via a nonzero exit code.
+
+This is a minimal installer for the current early-access scenario, not the full installer specified in the long-term brief. It has no updater, uninstaller, registry entry, path picker, progress display, retry/resume or signed manifest. To remove it, delete the install folder and shortcuts manually. Installer failure during file copying can leave a partially updated installation; close the game before reinstalling. Use only the installer and ZIP published together in the same release: each installer is pinned to that release's ZIP and will reject modified or replacement archives.

@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- Add a Windows installer that downloads and verifies the release package and creates shortcuts.
+
 ## 0.1.0 — Early access: Back Room
 - Add a small playable terminal scenario with hosting, intrusion, rack expansion, maintenance, heat, victory and loss.
 
