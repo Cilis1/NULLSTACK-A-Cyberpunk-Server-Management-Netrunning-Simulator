@@ -41,3 +41,23 @@ jobs:
           name: ${{ matrix.name }}
           path: NULLSTACK-back-room-*
           if-no-files-found: error
+  release:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[release]')
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish early-access release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "v0.1.0-alpha.${{ github.run_number }}" \
+            artifacts/linux-x64/*.tar.gz artifacts/windows-x64/*.zip \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "NULLSTACK: Back Room (early access)" \
+            --notes "A small playable terminal scenario for Windows x64 and Linux x64. Extract the archive and launch Nullstack.exe on Windows or run ./Nullstack in a terminal on Linux. Type help for controls and goals. This is not the full planned game: no campaign, graphical interface, save system for the scenario, installer, or self-updater. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
