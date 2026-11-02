@@ -12,6 +12,8 @@ cmake --build --preset linux-debug
 ctest --preset linux-debug
 ./build/linux-debug/nullstack_headless --seed 42 --ticks 100000 --save run.sqlite
 ./build/linux-debug/nullstack_headless --load run.sqlite --ticks 100
+./build/linux-debug/nullstack_headless --seed 42 --ticks 100000 --record run.replay
+./build/linux-debug/nullstack_headless --replay run.replay
 ```
 
 On Windows with Visual Studio: `cmake --preset windows-release`, `cmake --build --preset windows-release`, then `ctest --preset windows-release`. The runner accepts `--help` and reports its seed-dependent state hash. Tests include a 100,000-tick replay comparison. See [BUILDING](docs/BUILDING.md) and [TESTING](docs/TESTING.md).
