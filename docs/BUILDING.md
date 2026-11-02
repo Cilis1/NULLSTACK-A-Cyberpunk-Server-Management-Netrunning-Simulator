@@ -1,0 +1,3 @@
+# Building
+
+Install CMake 3.25 or newer and a C++20 toolchain. Use the presets in the README; the default generator is chosen by CMake. For other generators, configure with `cmake -S . -B build/custom -DBUILD_TESTING=ON`, build with `cmake --build build/custom`, and test with `ctest --test-dir build/custom --output-on-failure` (add `-C Release` for multi-config generators). SQLite is discovered on the system if its development package is installed. Otherwise CMake FetchContent downloads a pinned SQLite amalgamation from GitHub; the first configure therefore needs internet access. The core itself has no external dependencies. vcpkg integration is not yet provided.
