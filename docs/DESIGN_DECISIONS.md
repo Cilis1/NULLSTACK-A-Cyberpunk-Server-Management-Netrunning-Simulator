@@ -7,7 +7,7 @@ A small deterministic command-driven model is preferable to empty interfaces for
 The core uses fixed-width integer arithmetic and explicit PRNG and hash algorithms. Replay input order is significant and invalid input is rejected rather than silently repaired.
 
 ## Persistence boundary
-Persistence is not implemented yet. The intended design isolates SQLite in a persistence library and uses transactional snapshots; replay is a separate reproducibility tool. Schema changes will require explicit migrations before a future schema is accepted.
+SQLite is isolated in a persistence library and uses transactional snapshots; replay is a separate reproducibility tool. Schema changes require explicit migrations before a future schema is accepted.
 
 ## Licensing
 MIT for code to minimize contribution and integration friction. No third-party art or font is bundled at this stage.

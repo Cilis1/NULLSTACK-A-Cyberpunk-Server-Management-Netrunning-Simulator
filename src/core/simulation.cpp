@@ -46,6 +46,16 @@ void Simulation::tick() {
     ++m_tick;
     m_events.publish({Event::Type::TickAdvanced, m_tick});
 }
+Snapshot Simulation::snapshot() const { return {m_tick, m_credits, m_rng.state()}; }
+Result Simulation::restore(const Snapshot &snapshot) {
+    if (snapshot.credits < 0) {
+        return {false, "invalid credit balance"};
+    }
+    m_tick = snapshot.tick;
+    m_credits = snapshot.credits;
+    m_rng = Rng(snapshot.rngState);
+    return {true, "ok"};
+}
 std::uint64_t Simulation::stateHash() const {
     // FNV-1a over explicit little-endian fixed-width fields; no padding or native byte order.
     std::uint64_t hash = 14695981039346656037ULL;

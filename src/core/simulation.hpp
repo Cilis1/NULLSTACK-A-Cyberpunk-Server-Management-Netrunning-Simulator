@@ -57,6 +57,13 @@ struct RecordedCommand {
     Command command;
 };
 
+/// All simulation state needed to resume exactly; event subscribers are deliberately excluded.
+struct Snapshot {
+    std::uint64_t tick;
+    std::int64_t credits;
+    std::uint64_t rngState;
+};
+
 /// Deterministic headless simulation. Commands apply before advancing their specified tick.
 class Simulation {
   public:
@@ -66,6 +73,9 @@ class Simulation {
     std::uint64_t tickCount() const { return m_tick; }
     std::int64_t credits() const { return m_credits; }
     std::uint64_t stateHash() const;
+    Snapshot snapshot() const;
+    /// Rejects invalid state without changing the simulation or its event subscribers.
+    Result restore(const Snapshot &snapshot);
     EventBus &events() { return m_events; }
 
   private:
