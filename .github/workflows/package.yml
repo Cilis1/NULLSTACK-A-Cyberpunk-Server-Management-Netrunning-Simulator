@@ -88,3 +88,23 @@ jobs:
             --target "$GITHUB_SHA" --prerelease \
             --title "NULLSTACK: Back Room (early access)" \
             --notes "A small playable terminal scenario for Windows x64 and Linux x64. On Windows, run NullstackSetup.exe to download and install the game, or extract the ZIP and launch Nullstack.exe. On Linux extract the archive and run ./Nullstack in a terminal. Type help for controls and goals. This is not the full planned game: no campaign, graphical interface, scenario saves, uninstaller, or self-updater. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
+  verify-download-install:
+    needs: release
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download installer and install from the published release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download "v0.1.0-alpha.${{ github.run_number }}" --pattern NullstackSetup.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Could not download installer' }
+          $destination = Join-Path $PWD 'installed-game'
+          $args = @('/S', '/no-shortcut', "`"/D=$destination`"")
+          $process = Start-Process -FilePath (Join-Path $PWD 'NullstackSetup.exe') -ArgumentList $args -Wait -PassThru
+          if ($process.ExitCode -ne 0 -or !(Test-Path "$destination/Nullstack.exe")) { throw 'Online installation failed' }
+          & "$destination/Nullstack.exe" --help
+          if ($LASTEXITCODE -ne 0) { throw 'Installed game failed to run' }
