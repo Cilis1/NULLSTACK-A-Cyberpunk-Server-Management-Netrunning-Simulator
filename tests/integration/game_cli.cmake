@@ -1,0 +1,6 @@
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/game-input.txt" "host\nquit\n")
+execute_process(COMMAND "${GAME}" 42 INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/game-input.txt" OUTPUT_VARIABLE output RESULT_VARIABLE result)
+if(NOT result EQUAL 0 OR NOT output MATCHES "Hosting contracts paid out" OR NOT output MATCHES "DAY 1" OR NOT output MATCHES "Disconnected")
+  message(FATAL_ERROR "Interactive game failed: ${result}\n${output}")
+endif()
+file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/game-input.txt")

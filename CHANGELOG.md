@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — Early access: Back Room
+- Add a small playable terminal scenario with hosting, intrusion, rack expansion, maintenance, heat, victory and loss.
+
+## Foundation
 - Establish design and architecture documents and milestone roadmap.
 - Add a standalone C++20 deterministic core prototype, in-memory replay, event bus, headless runner and tests.
 - Add a versioned replay log format and headless recording/playback.

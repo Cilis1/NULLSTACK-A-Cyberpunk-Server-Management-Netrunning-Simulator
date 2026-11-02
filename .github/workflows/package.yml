@@ -1,0 +1,43 @@
+name: Package early-access builds
+on:
+  workflow_dispatch:
+  push:
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x64
+          - os: windows-latest
+            name: windows-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p package
+          cp build/Nullstack README.md LICENSE docs/EARLY_ACCESS.md package/
+          tar -czf NULLSTACK-back-room-linux-x64.tar.gz -C package .
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path package | Out-Null
+          Copy-Item build/Release/Nullstack.exe,README.md,LICENSE,docs/EARLY_ACCESS.md package/
+          Compress-Archive -Path package/* -DestinationPath NULLSTACK-back-room-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: NULLSTACK-back-room-*
+          if-no-files-found: error

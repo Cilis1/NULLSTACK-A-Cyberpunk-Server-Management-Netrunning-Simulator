@@ -1,6 +1,6 @@
 # Roadmap
 
-The brief's launch scope is multi-year; this roadmap distinguishes planned work from delivered code. Each milestone requires a runnable build, tests and documentation before advancing. Release tags, demo GIFs and public CI are release operations, not assumed to exist.
+The brief's launch scope is multi-year; this roadmap distinguishes planned work from delivered code. An experimental terminal scenario is available as a separate early-access slice; it does not constitute completion of M0–M9. Each milestone requires a runnable build, tests and documentation before advancing. Release tags, demo GIFs and public CI are release operations, not assumed to exist.
 
 - **M0 Foundation (in progress):** standalone deterministic core, command/event primitives, persistence boundary, headless harness, build and CI scaffolding.
 - **M1 Window and shell:** SDL/OpenGL/ImGui workstation, command shell and accessible settings.
