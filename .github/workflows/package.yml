@@ -52,8 +52,8 @@ jobs:
           $args = @('/S', '/no-shortcut', "`"/archive=$zip`"", "`"/D=$destination`"")
           $process = Start-Process -FilePath (Join-Path $PWD 'NullstackSetup.exe') -ArgumentList $args -Wait -PassThru
           if ($process.ExitCode -ne 0 -or !(Test-Path "$destination/Nullstack.exe")) { throw 'Installer test failed' }
-          & "$destination/Nullstack.exe" --help
-          if ($LASTEXITCODE -ne 0) { throw 'Installed game failed to run' }
+          $game = Start-Process -FilePath "$destination/Nullstack.exe" -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($game.ExitCode -ne 0) { throw 'Installed game failed to run' }
           if ((Get-FileHash "$destination/Nullstack.exe").Hash -ne (Get-FileHash 'build/Release/Nullstack.exe').Hash) { throw 'Installed executable mismatch' }
           $bad = Join-Path $PWD 'bad.zip'
           Set-Content $bad 'not a verified payload'
@@ -87,7 +87,7 @@ jobs:
             artifacts/linux-x64/*.tar.gz artifacts/windows-x64/*.zip artifacts/windows-x64/NullstackSetup.exe \
             --target "$GITHUB_SHA" --prerelease \
             --title "NULLSTACK: Back Room (early access)" \
-            --notes "A small playable terminal scenario for Windows x64 and Linux x64. On Windows, run NullstackSetup.exe to install the game; if the repository is private, first download the matching Windows ZIP in your browser and select it when prompted. Alternatively extract the ZIP and launch Nullstack.exe. On Linux extract the archive and run ./Nullstack in a terminal. Type help for controls and goals. This is not the full planned game: no campaign, graphical interface, scenario saves, uninstaller, or self-updater. Automatic installer download requires public access to the release; private GitHub repositories return 404 to anonymous download requests. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
+            --notes "A small playable early-access scenario: windowed on Windows and terminal-based on Linux. On Windows, run NullstackSetup.exe to install the game; if the repository is private, first download the matching Windows ZIP in your browser and select it when prompted. Alternatively extract the ZIP and launch Nullstack.exe. On Linux extract the archive and run ./Nullstack in a terminal. The Windows window shows controls and goals; on Linux type help. This is not the full planned game: no full campaign, scenario saves, uninstaller, or self-updater. Automatic installer download requires public access to the release; private GitHub repositories return 404 to anonymous download requests. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
   verify-download-install:
     if: github.event.repository.private == false
     needs: release
@@ -107,5 +107,5 @@ jobs:
           $args = @('/S', '/no-shortcut', "`"/D=$destination`"")
           $process = Start-Process -FilePath (Join-Path $PWD 'NullstackSetup.exe') -ArgumentList $args -Wait -PassThru
           if ($process.ExitCode -ne 0 -or !(Test-Path "$destination/Nullstack.exe")) { throw 'Online installation failed' }
-          & "$destination/Nullstack.exe" --help
-          if ($LASTEXITCODE -ne 0) { throw 'Installed game failed to run' }
+          $game = Start-Process -FilePath "$destination/Nullstack.exe" -ArgumentList '--smoke-test' -Wait -PassThru
+          if ($game.ExitCode -ne 0) { throw 'Installed game failed to run' }

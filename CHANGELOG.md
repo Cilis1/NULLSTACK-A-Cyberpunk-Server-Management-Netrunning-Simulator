@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Add a native Windows game window with rack status, action buttons, feedback, and new-run control. Linux retains its terminal interface.
 - Add a Windows installer that downloads and verifies the release package and creates shortcuts.
 
 ## 0.1.0 — Early access: Back Room
