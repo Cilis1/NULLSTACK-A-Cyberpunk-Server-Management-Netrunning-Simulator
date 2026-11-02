@@ -198,7 +198,7 @@ int run() {
     if (!verify(archive, error) || !extract(archive, temp.path, error)) return fail(error);
     fs::create_directories(install, ec);
     if (ec) return fail(L"Cannot create installation directory. Check permissions and disk space.");
-    for (const auto *name : {L"Nullstack.exe", L"README.md", L"LICENSE", L"EARLY_ACCESS.md"}) {
+    for (const auto *name : {L"Nullstack.exe", L"README.md", L"LICENSE", L"EARLY_ACCESS.md", L"THIRD_PARTY.md", L"sqlite-amalgamation-BSD.txt"}) {
         fs::copy_file(temp.path / name, install / name, fs::copy_options::overwrite_existing, ec);
         if (ec) return fail(L"Could not install game files. Close the game and check permissions and disk space.");
     }

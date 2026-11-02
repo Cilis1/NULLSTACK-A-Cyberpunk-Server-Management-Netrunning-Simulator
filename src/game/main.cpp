@@ -1,4 +1,6 @@
 #include "core/game.hpp"
+#include "core/thermal.hpp"
+#include "save/game_save.hpp"
 #include <charconv>
 #include <cstdint>
 #include <iostream>
@@ -10,20 +12,23 @@ void status(const ns::GameState &s) {
     std::cout << "\nDAY " << s.day << " | credits " << s.credits << " | reputation " << s.reputation
               << " | heat " << s.heat << "/100\nServers " << s.servers << "/8 | power " << s.power
               << " | cooling " << s.cooling << " | condition " << s.condition << "%\n"
-              << "Daily overhead: " << 25 + s.servers * 10 + s.cooling * 5 << " credits\n";
+              << "Rack temperature: " << s.temperature << " C | throughput " << ns::thermalThroughput(s.temperature) << "%\n"
+              << "Base overhead: " << 25 + s.servers * 10 + s.cooling * 5 << " credits/day; hosting adds " << s.servers * 8 << " credits.\n";
 }
 void help() {
     std::cout << "\nCommands (one successful action = one day):\n"
-              << "  host     Serve clients: 110 per server scaled by condition; +1 reputation, +2 heat.\n"
+              << "  host     Serve clients: income scales with condition and rack temperature; +1 reputation, +2 heat.\n"
+              << "  archive  Preserve banned data: needs 2 servers, 2 reputation and 50% condition; +5 heat.\n"
               << "  run      Intrude: 65% chance of 350 credits and 16 heat; failure costs 100 and 28 heat.\n"
               << "  server   Buy a server (300). Each server adds 10/day overhead. Max 8.\n"
-              << "  cooling  Buy cooling (180); each adds 5/day overhead. Excess servers wear faster.\n"
+              << "  cooling  Buy cooling (180); each adds 5/day overhead and lowers rack temperature.\n"
               << "  power    Upgrade circuit (220); hosting requires power >= servers.\n"
               << "  repair   Restore 35 condition (100; maximum 100).\n"
               << "  laylow   Reduce heat by 18. Daily overhead still applies.\n"
+              << "  save     Save to back-room.sqlite.  load   Load the manual slot.\n"
               << "  status   Show the rack.  help   Show this text.  quit   Exit the run.\n"
               << "Win: hold 2500 credits, 4 servers and 5 reputation. Heat 100 causes a raid;\n"
-              << "negative credits cause bankruptcy. Every action incurs rent and power.\n";
+              << "negative credits cause bankruptcy. Racks above 45 C throttle and wear faster.\n";
 }
 }
 int main(int argc, char **argv) {
@@ -48,9 +53,16 @@ int main(int argc, char **argv) {
         if (!std::getline(std::cin, input) || input == "quit") break;
         if (input == "help") { help(); continue; }
         if (input == "status" || input.empty()) continue;
+        if (input == "save" || input == "load") {
+            const auto result = input == "save" ? ns::save::writeGame("back-room.sqlite", game)
+                                                : ns::save::loadGame("back-room.sqlite", game);
+            std::cout << (result.ok ? "OK: " : "ERROR: ") << result.message << '\n';
+            continue;
+        }
         ns::GameAction action;
         if (input == "host") action = ns::GameAction::Host;
         else if (input == "run") action = ns::GameAction::Intrude;
+        else if (input == "archive") action = ns::GameAction::Archive;
         else if (input == "server") action = ns::GameAction::BuyServer;
         else if (input == "cooling") action = ns::GameAction::BuyCooling;
         else if (input == "power") action = ns::GameAction::UpgradePower;
@@ -65,6 +77,6 @@ int main(int argc, char **argv) {
     case ns::GameOutcome::Won: std::cout << "VICTORY // Your back room is a real operation.\n"; break;
     case ns::GameOutcome::Bankrupt: std::cout << "BANKRUPT // The landlord has changed the locks.\n"; break;
     case ns::GameOutcome::Raided: std::cout << "RAID // The door was cheaper than the warrant.\n"; break;
-    case ns::GameOutcome::Playing: std::cout << "Disconnected. This scenario does not yet save progress.\n"; break;
+    case ns::GameOutcome::Playing: std::cout << "Disconnected. Unsaved progress is lost.\n"; break;
     }
 }

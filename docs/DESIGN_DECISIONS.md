@@ -13,7 +13,10 @@ SQLite is isolated in a persistence library and uses transactional snapshots; re
 MIT for code to minimize contribution and integration friction. No third-party art or font is bundled at this stage.
 
 ## Early-access playable slice
-The user requested a runnable release even if incomplete. Back Room is a separate, deliberately small turn-based terminal scenario with explicit victory and loss conditions, built on the platform-independent core. Its rules are currently hardcoded to make the slice testable; this is an acknowledged exception to the planned data-driven game, not a claim that the content architecture is complete. Its state is separate from the prototype snapshot and replay systems; those do not yet save or replay gameplay.
+The user requested a runnable release even if incomplete. Back Room is a separate, deliberately small turn-based terminal scenario with explicit victory and loss conditions, built on the platform-independent core. Its rules are currently hardcoded to make the slice testable; this is an acknowledged exception to the planned data-driven game, not a claim that the content architecture is complete. Its state is separate from the prototype snapshot and replay systems. A separate SQLite manual save now preserves the playable state and RNG; gameplay replay remains unimplemented.
 
 ## Windows windowed prototype
 The early-access Windows build uses native Win32 controls for a runnable window without a console or additional runtime dependencies. This is a temporary presentation layer over the same deterministic rules, not the planned SDL/OpenGL/ImGui VOIDSHELL client. Linux continues to use the terminal interface.
+
+## Aggregate thermal model
+The Back Room scenario models one rack temperature with a 24 C ambient and a five-degree-per-day movement toward its load-dependent equilibrium. Above 45 C it reduces workload throughput and accelerates wear. This deliberately testable approximation is not the later per-tile diffusion model; heat from law enforcement remains a separate counter. Version 1 scenario saves load at ambient and are migrated on their next write.

@@ -1,10 +1,13 @@
 # Changelog
 
-## Unreleased
-- Add a native Windows game window with rack status, action buttons, feedback, and new-run control. Linux retains its terminal interface.
-- Add a Windows installer that downloads and verifies the release package and creates shortcuts.
+## 0.2.0 — Early access
+- Model rack temperature, cooling, throttling and load-dependent electricity cost; add a higher-risk Archivists contract.
+- Add version 1 to version 2 scenario-save migration for the new temperature field.
+- Add a transactional manual Back Room save slot, including deterministic RNG continuation, with Windows buttons and Linux terminal commands.
 
 ## 0.1.0 — Early access: Back Room
+- Add a native Windows game window with rack status, action buttons, feedback, and new-run control. Linux retains its terminal interface.
+- Add a Windows installer that downloads and verifies the release package and creates shortcuts.
 - Add a small playable terminal scenario with hosting, intrusion, rack expansion, maintenance, heat, victory and loss.
 
 ## Foundation

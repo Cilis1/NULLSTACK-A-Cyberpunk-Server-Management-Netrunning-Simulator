@@ -3,7 +3,12 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellapi.h>
+#include <shlobj.h>
+#include <filesystem>
+#include <system_error>
+#include "save/game_save.hpp"
 #include "core/game.hpp"
+#include "core/thermal.hpp"
 #include <array>
 #include <cstdint>
 #include <string>
@@ -12,17 +17,19 @@
 namespace {
 constexpr int FIRST_ACTION = 100;
 constexpr int NEW_RUN = 200;
+constexpr int SAVE_RUN = 201;
+constexpr int LOAD_RUN = 202;
 constexpr COLORREF BACKGROUND = RGB(14, 19, 23);
 constexpr COLORREF TEXT = RGB(213, 222, 218);
 constexpr COLORREF ACCENT = RGB(255, 155, 58);
 constexpr int MIN_WIDTH = 790;
-constexpr int MIN_HEIGHT = 680;
+constexpr int MIN_HEIGHT = 760;
 
 struct Action {
     const wchar_t *label;
     ns::GameAction value;
 };
-constexpr std::array<Action, 7> ACTIONS{{
+constexpr std::array<Action, 8> ACTIONS{{
     {L"HOST CONTRACTS", ns::GameAction::Host},
     {L"RUN INTRUSION", ns::GameAction::Intrude},
     {L"BUY SERVER  /  300", ns::GameAction::BuyServer},
@@ -30,12 +37,13 @@ constexpr std::array<Action, 7> ACTIONS{{
     {L"UPGRADE POWER  /  220", ns::GameAction::UpgradePower},
     {L"REPAIR  /  100", ns::GameAction::Repair},
     {L"LAY LOW", ns::GameAction::LayLow},
+    {L"ARCHIVE CONTRACT", ns::GameAction::Archive},
 }};
 
 struct WindowState {
     ns::Game game{42};
     std::uint64_t seed = 42;
-    HWND title{}, subtitle{}, status{}, goal{}, message{}, rules{}, restart{};
+    HWND title{}, subtitle{}, status{}, goal{}, message{}, rules{}, restart{}, save{}, load{};
     std::array<HWND, ACTIONS.size()> buttons{};
     HFONT font{}, titleFont{};
     HBRUSH background{};
@@ -63,7 +71,8 @@ void update(WindowState &ui, std::wstring_view message) {
         L"     REPUTATION " + std::to_wstring(s.reputation) + L"     HEAT " + std::to_wstring(s.heat) + L" / 100\n\n" +
         L"SERVERS " + std::to_wstring(s.servers) + L" / 8     POWER " + std::to_wstring(s.power) +
         L"     COOLING " + std::to_wstring(s.cooling) + L"     CONDITION " + std::to_wstring(s.condition) +
-        L"%\n\nDAILY OVERHEAD  " + std::to_wstring(overhead) + L" CREDITS";
+        L"%\n\nRACK " + std::to_wstring(s.temperature) + L" C   THROUGHPUT " + std::to_wstring(ns::thermalThroughput(s.temperature)) +
+        L"%   BASE COST " + std::to_wstring(overhead) + L" / DAY";
     SetWindowTextW(ui.status, stats.c_str());
     std::wstring result(message);
     if (s.outcome == ns::GameOutcome::Won) result += L"\n\nVICTORY // Your back room is a real operation.";
@@ -71,6 +80,13 @@ void update(WindowState &ui, std::wstring_view message) {
     if (s.outcome == ns::GameOutcome::Bankrupt) result += L"\n\nBANKRUPT // The landlord has changed the locks.";
     SetWindowTextW(ui.message, result.c_str());
     for (HWND control : ui.buttons) EnableWindow(control, s.outcome == ns::GameOutcome::Playing);
+}
+std::filesystem::path savePath() {
+    PWSTR raw = nullptr;
+    if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_DEFAULT, nullptr, &raw))) return {};
+    std::filesystem::path path(raw);
+    CoTaskMemFree(raw);
+    return path / L"Nullstack" / L"saves" / L"back-room.sqlite";
 }
 void layout(HWND window, WindowState &ui) {
     RECT area{}; GetClientRect(window, &area);
@@ -87,9 +103,11 @@ void layout(HWND window, WindowState &ui) {
         const int y = 266 + static_cast<int>(i / 3) * 48;
         position(ui.buttons[i], x, y, col, 37);
     }
-    position(ui.restart, left + (col + gap), 362, col, 37);
-    position(ui.message, left, 425, width - 64, 66);
-    position(ui.rules, left, 508, width - 64, 115);
+    position(ui.restart, left + 2 * (col + gap), 362, col, 37);
+    position(ui.save, left, 410, col, 37);
+    position(ui.load, left + (col + gap), 410, col, 37);
+    position(ui.message, left, 467, width - 64, 66);
+    position(ui.rules, left, 546, width - 64, 125);
 }
 LRESULT CALLBACK windowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     auto *ui = reinterpret_cast<WindowState *>(GetWindowLongPtrW(window, GWLP_USERDATA));
@@ -111,12 +129,14 @@ LRESULT CALLBACK windowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         ui->status = label(window, L"");
         ui->goal = label(window, L"OBJECTIVE  /  2500 credits + 4 servers + 5 reputation\nAvoid bankruptcy and keep heat below 100.");
         ui->message = label(window, L"");
-        ui->rules = label(window, L"HOW IT WORKS\nEach action advances one day and charges overhead. Hosting earns credits and reputation but wears the rack; cooling reduces wear. Intrusions pay more but raise heat. Repair restores condition; lay low reduces heat. Upgrade power before hosting with more servers.\n\nProgress is not saved when you close the game.");
+        ui->rules = label(window, L"HOW IT WORKS\nEach action costs a day and overhead. Hosting costs 8 extra per server; hot racks throttle above 45 C and wear faster. Archive contracts require two servers, two reputation, 50% condition. Intrusions raise legal heat; lay low reduces it. Upgrade power before hosting with more servers.\n\nSave and load use one manual slot; your run is not saved automatically.");
         for (std::size_t i = 0; i < ACTIONS.size(); ++i)
             ui->buttons[i] = button(window, ACTIONS[i].label, FIRST_ACTION + static_cast<int>(i));
         ui->restart = button(window, L"NEW RUN", NEW_RUN);
+        ui->save = button(window, L"SAVE RUN", SAVE_RUN);
+        ui->load = button(window, L"LOAD RUN", LOAD_RUN);
         setFont(ui->title, ui->titleFont);
-        for (HWND h : {ui->subtitle, ui->status, ui->goal, ui->message, ui->rules, ui->restart}) setFont(h, ui->font);
+        for (HWND h : {ui->subtitle, ui->status, ui->goal, ui->message, ui->rules, ui->restart, ui->save, ui->load}) setFont(h, ui->font);
         for (HWND h : ui->buttons) setFont(h, ui->font);
         update(*ui, L"SYSTEM READY // Choose an action to begin.");
         layout(window, *ui);
@@ -147,6 +167,22 @@ LRESULT CALLBACK windowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         } else if (id == NEW_RUN) {
             ui->game = ns::Game(++ui->seed);
             update(*ui, L"NEW RUN // The rack hums back to life.");
+        } else if (id == SAVE_RUN || id == LOAD_RUN) {
+            const auto path = savePath();
+            if (path.empty()) {
+                update(*ui, L"SAVE ERROR // Cannot locate your application data folder.");
+            } else if (id == SAVE_RUN) {
+                std::error_code ec;
+                std::filesystem::create_directories(path.parent_path(), ec);
+                if (ec) update(*ui, L"SAVE ERROR // Cannot create the save directory.");
+                else {
+                    const auto result = ns::save::writeGame(path, ui->game);
+                    update(*ui, result.ok ? L"RUN SAVED // Manual slot updated." : L"SAVE ERROR // " + widen(result.message));
+                }
+            } else {
+                const auto result = ns::save::loadGame(path, ui->game);
+                update(*ui, result.ok ? L"RUN LOADED // Manual slot restored." : L"LOAD ERROR // " + widen(result.message));
+            }
         }
         return 0;
     }
@@ -170,7 +206,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int show) 
     if (!RegisterClassW(&wc)) return 1;
     WindowState ui;
     HWND window = CreateWindowExW(WS_EX_CONTROLPARENT, wc.lpszClassName, L"NULLSTACK // Back Room",
-                                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 920, 740,
+                                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 920, 800,
                                   nullptr, nullptr, instance, &ui);
     if (!window) return 1;
     if (smoke) {
