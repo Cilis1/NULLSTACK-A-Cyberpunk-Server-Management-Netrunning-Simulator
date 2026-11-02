@@ -87,8 +87,9 @@ jobs:
             artifacts/linux-x64/*.tar.gz artifacts/windows-x64/*.zip artifacts/windows-x64/NullstackSetup.exe \
             --target "$GITHUB_SHA" --prerelease \
             --title "NULLSTACK: Back Room (early access)" \
-            --notes "A small playable terminal scenario for Windows x64 and Linux x64. On Windows, run NullstackSetup.exe to download and install the game, or extract the ZIP and launch Nullstack.exe. On Linux extract the archive and run ./Nullstack in a terminal. Type help for controls and goals. This is not the full planned game: no campaign, graphical interface, scenario saves, uninstaller, or self-updater. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
+            --notes "A small playable terminal scenario for Windows x64 and Linux x64. On Windows, run NullstackSetup.exe to install the game; if the repository is private, first download the matching Windows ZIP in your browser and select it when prompted. Alternatively extract the ZIP and launch Nullstack.exe. On Linux extract the archive and run ./Nullstack in a terminal. Type help for controls and goals. This is not the full planned game: no campaign, graphical interface, scenario saves, uninstaller, or self-updater. Automatic installer download requires public access to the release; private GitHub repositories return 404 to anonymous download requests. The Windows executable is unsigned and may trigger SmartScreen. Builds and tests ran on GitHub Actions."
   verify-download-install:
+    if: github.event.repository.private == false
     needs: release
     runs-on: windows-latest
     permissions:

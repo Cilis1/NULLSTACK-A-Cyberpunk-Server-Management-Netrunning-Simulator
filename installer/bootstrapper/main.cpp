@@ -6,6 +6,7 @@
 #include <bcrypt.h>
 #include <shlobj.h>
 #include <shellapi.h>
+#include <commdlg.h>
 #include <objbase.h>
 #include <filesystem>
 #include <string>
@@ -177,9 +178,23 @@ int run() {
     DeleteFileW(temp.path.c_str());
     std::error_code ec;
     if (!fs::create_directory(temp.path, ec)) return fail(L"Cannot create temporary directory.");
-    const fs::path archive = localArchive.empty() ? temp.path / L"payload.zip" : localArchive;
+    fs::path archive = localArchive.empty() ? temp.path / L"payload.zip" : localArchive;
     std::wstring error;
-    if (localArchive.empty() && !download(NULLSTACK_PAYLOAD_URL, archive, error)) return fail(error);
+    if (localArchive.empty() && !download(NULLSTACK_PAYLOAD_URL, archive, error)) {
+        if (silent) return fail(error);
+        const auto prompt = error + L"\n\nIf the release is private, download the matching Windows ZIP in your browser. Select it now?";
+        if (MessageBoxW(nullptr, prompt.c_str(), L"NULLSTACK Setup", MB_YESNO | MB_ICONWARNING) != IDYES) return 1;
+        wchar_t selected[32768]{};
+        OPENFILENAMEW dialog{};
+        dialog.lStructSize = sizeof(dialog);
+        dialog.lpstrFilter = L"ZIP archive\0*.zip\0All files\0*.*\0\0";
+        dialog.lpstrFile = selected;
+        dialog.nMaxFile = static_cast<DWORD>(sizeof(selected) / sizeof(selected[0]));
+        dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        dialog.lpstrTitle = L"Select the matching NULLSTACK release ZIP";
+        if (!GetOpenFileNameW(&dialog)) return fail(L"No game package selected.");
+        archive = selected;
+    }
     if (!verify(archive, error) || !extract(archive, temp.path, error)) return fail(error);
     fs::create_directories(install, ec);
     if (ec) return fail(L"Cannot create installation directory. Check permissions and disk space.");
